@@ -1,0 +1,31 @@
+services:
+  vault:
+    image: hashicorp/vault:1.18
+    container_name: vault-dev
+    ports:
+      - "8200:8200"
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: "root"
+      VAULT_DEV_LISTEN_ADDRESS: "0.0.0.0:8200"
+      VAULT_ADDR: "http://127.0.0.1:8200"
+    # Dev mode: in-memory, unsealed, KV v2 mounted at secret/. For local testing ONLY.
+    cap_add:
+      - IPC_LOCK
+    healthcheck:
+      test: ["CMD", "vault", "status"]
+      interval: 3s
+      timeout: 2s
+      retries: 20
+
+  # One-shot job that seeds a demo secret, then exits.
+  vault-init:
+    image: hashicorp/vault:1.18
+    container_name: vault-init
+    depends_on:
+      vault:
+        condition: service_healthy
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: "root"
+    entrypoint: ["/bin/sh", "/vault-init.sh"]
+    volumes:
+      - ./vault-init.sh:/vault-init.sh:ro
