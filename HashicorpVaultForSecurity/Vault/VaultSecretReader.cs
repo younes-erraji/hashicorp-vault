@@ -45,7 +45,7 @@ namespace HashicorpVaultForSecurity.Vault
             ArgumentNullException.ThrowIfNullOrWhiteSpace(key, nameof(key));
 
             IReadOnlyDictionary<string, object> secrets = await ReadSecretAsync(cancellationToken);
-            string? secretValue = secrets.TryGetValue(key, out var value) ? value?.ToString() : null;
+            string? secretValue = secrets.TryGetValue(key, out object? value) ? value?.ToString() : null;
             ArgumentNullException.ThrowIfNullOrWhiteSpace(secretValue, key);
 
             if (value is JsonElement element)

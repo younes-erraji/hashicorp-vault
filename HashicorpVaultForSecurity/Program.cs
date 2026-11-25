@@ -3,10 +3,11 @@ using HashicorpVaultForSecurity.Vault;
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-
 builder.Services.Configure<VaultSettings>(
     builder.Configuration.GetSection(VaultSettings.SectionName));
 builder.Services.AddSingleton<IVaultSecretReader, VaultSecretReader>();
+
+await builder.AddVaultConfigurationAsync();
 
 WebApplication app = builder.Build();
 
