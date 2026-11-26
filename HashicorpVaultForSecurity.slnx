@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="HashicorpVaultForSecurity.Vault/HashicorpVaultForSecurity.Vault.csproj" />
+  <Project Path="HashicorpVaultForSecurity/HashicorpVaultForSecurity.csproj" />
+</Solution>

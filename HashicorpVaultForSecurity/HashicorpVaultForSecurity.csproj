@@ -6,8 +6,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
-	<ItemGroup>
-		<PackageReference Include="VaultSharp" Version="1.7.0.3" />
-	</ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\HashicorpVaultForSecurity.Vault\HashicorpVaultForSecurity.Vault.csproj" />
+  </ItemGroup>
 
 </Project>
