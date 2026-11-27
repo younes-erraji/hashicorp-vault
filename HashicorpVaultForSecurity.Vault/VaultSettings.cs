@@ -22,6 +22,12 @@ public class VaultSettings
     public string Token { get; set; }
 
     /// <summary>
+    /// The Vault namespace (Enterprise / HCP), e.g. <c>"younes"</c>.
+    /// Leave null or empty for open-source Vault, which has no namespaces.
+    /// </summary>
+    public string? Namespace { get; set; }
+
+    /// <summary>
     /// The path where the KV (key-value) secrets engine is mounted, e.g. <c>"secret"</c>.
     /// </summary>
     public string MountPoint { get; set; }

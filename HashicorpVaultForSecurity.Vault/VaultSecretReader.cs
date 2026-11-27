@@ -25,7 +25,10 @@ namespace HashicorpVaultForSecurity.Vault
             _settings = settings;
 
             IAuthMethodInfo authMethod = new TokenAuthMethodInfo(_settings.Token);
-            VaultClientSettings clientSettings = new VaultClientSettings(_settings.Address, authMethod);
+            VaultClientSettings clientSettings = new VaultClientSettings(_settings.Address, authMethod)
+            {
+                Namespace = _settings.Namespace,
+            };
             _client = new VaultClient(clientSettings);
         }
 
