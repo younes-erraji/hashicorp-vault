@@ -82,3 +82,12 @@ string? smtpHost = configuration["Smtp:Host"];
 ```
 
 ---
+
+as for now i am working on the authentication with BUA OIDC SO that everyone wants to use the vault could connect using their credentials 
+I found a way that could allow anyone to use their credential info to connect to vault
+but it is not interactive for now
+
+basically you would have to put your credential directly into the settings
+
+still didn't found a way to implement The OIDC authentication that would 
+if anyone have any idea how or can assist

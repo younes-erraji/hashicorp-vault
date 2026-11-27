@@ -14,32 +14,82 @@ namespace HashicorpVaultForSecurity.Vault
     public class VaultSecretReader : IVaultSecretReader
     {
         private readonly VaultSettings _settings;
-        private readonly IVaultClient _client;
+
+        // The client is built lazily because OIDC login is async and may open a browser.
+        // For Token auth the login step is instant; for OIDC it runs once on first use.
+        private readonly SemaphoreSlim _clientLock = new SemaphoreSlim(1, 1);
+        private IVaultClient? _client;
 
         /// <summary>
         /// Creates a reader that connects to Vault using the given settings.
         /// </summary>
-        /// <param name="settings">The Vault address, token, mount point and secret path.</param>
+        /// <param name="settings">The Vault address, auth method, mount point and secret path.</param>
         public VaultSecretReader(VaultSettings settings)
         {
             _settings = settings;
-
-            IAuthMethodInfo authMethod = new TokenAuthMethodInfo(_settings.Token);
-            VaultClientSettings clientSettings = new VaultClientSettings(_settings.Address, authMethod)
-            {
-                Namespace = _settings.Namespace,
-            };
-            _client = new VaultClient(clientSettings);
         }
 
         /// <inheritdoc />
         public async Task<IReadOnlyDictionary<string, object>> ReadSecretAsync(CancellationToken cancellationToken = default)
         {
-            Secret<SecretData> secret = await _client.V1.Secrets.KeyValue.V2.ReadSecretAsync(
+            IVaultClient client = await GetClientAsync(cancellationToken);
+
+            Secret<SecretData> secret = await client.V1.Secrets.KeyValue.V2.ReadSecretAsync(
                 path: _settings.SecretPath,
                 mountPoint: _settings.MountPoint);
 
             return new Dictionary<string, object>(secret.Data.Data);
+        }
+
+        /// <summary>
+        /// Gets the Vault client, creating it (and logging in, if using OIDC) the first time.
+        /// </summary>
+        private async Task<IVaultClient> GetClientAsync(CancellationToken cancellationToken)
+        {
+            if (_client is not null)
+            {
+                return _client;
+            }
+
+            await _clientLock.WaitAsync(cancellationToken);
+            try
+            {
+                if (_client is null)
+                {
+                    IAuthMethodInfo authMethod = await CreateAuthMethodAsync(cancellationToken);
+                    VaultClientSettings clientSettings = new VaultClientSettings(_settings.Address, authMethod)
+                    {
+                        Namespace = _settings.Namespace,
+                    };
+                    _client = new VaultClient(clientSettings);
+                }
+            }
+            finally
+            {
+                _clientLock.Release();
+            }
+
+            return _client;
+        }
+
+        /// <summary>
+        /// Builds the Vault auth method based on <see cref="VaultSettings.AuthMethod"/>.
+        /// For OIDC this runs the interactive browser login and uses the resulting token.
+        /// </summary>
+        private async Task<IAuthMethodInfo> CreateAuthMethodAsync(CancellationToken cancellationToken)
+        {
+            switch (_settings.AuthMethod)
+            {
+                case VaultAuthMethod.Oidc:
+                    string oidcToken = await VaultOidcLogin.LoginAsync(
+                        _settings.Address, _settings.Oidc, _settings.Namespace, cancellationToken);
+                    return new TokenAuthMethodInfo(oidcToken);
+
+                case VaultAuthMethod.Token:
+                default:
+                    ArgumentException.ThrowIfNullOrWhiteSpace(_settings.Token, nameof(_settings.Token));
+                    return new TokenAuthMethodInfo(_settings.Token);
+            }
         }
 
         /// <inheritdoc />
